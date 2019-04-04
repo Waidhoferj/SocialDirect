@@ -38,7 +38,7 @@ html {
 
 
 
-.active-toggle {
+.active {
     background: rgb(157, 227, 255)
 }
 
@@ -67,7 +67,17 @@ html {
     width: 40vw;
     height:40vw;
     border-radius: 6px;
+    margin: auto;
 }
+
+.controls {
+    display: flex;
+}
+
+.control {
+    width: 100%;
+}
+
 
 .user {
     width:3vw;
@@ -145,6 +155,25 @@ html {
     z-index: 200;
 }
 
+.pin-button {
+    padding: 10px;
+    margin: 0 5px;
+    height: 6vw;
+}
+
+
+.pause-play {
+    padding: 10px;
+    margin: 0 5px;
+    height: 6vw;
+}
+
+.cancel {
+    padding: 10px;
+    margin: 0 5px;
+    height: 6vw;
+}
+
 
 
 .direction {
@@ -156,8 +185,8 @@ html {
 
 .center-circle {
     position: relative;
-    width: 25vw;
-    height: 25vw;
+    width: 17vw;
+    height: 17vw;
     background:#09B8FF;
     border-radius:  50%;
     margin: auto;
@@ -188,9 +217,27 @@ html {
 
 .degree-label {
     color: #09B8FF;
-    font-size: 2rem;
+    font-size: 1.5rem;
     padding: none;
 
+}
+
+.location-data {
+    margin: auto;
+    margin-top: 20px;
+}
+
+table {
+    padding: 5px;
+    color: #09B8FF;
+    border: 1px solid #09B8FF;
+    border-radius: 3vw;
+}
+
+th {
+    font-size: 1em;
+    color: #0773BA;
+    padding: 10px;
 }
 
 

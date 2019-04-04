@@ -17,7 +17,7 @@
         </div>
     </div>
     <nav><div class="toggle-bar">
-        <a href="#" class="toggle active-toggle" id="local">Local</a> <a href="#" class="toggle" id="online">Online</a>
+        <a href="#local" class="toggle active" id="local">Local</a> <a href="#online" class="toggle" id="online">Online</a>
     </div></nav>
     <div class="container">
         <div class="birds-eye">
@@ -28,8 +28,14 @@
                 </div>
 
                 <div class="match">
-                        <img src="./assets/arrow-2.svg" alt="person-2" class="arrow" id="match-arrow" draggable="true">
+                        <img src="./assets/arrow.svg" alt="person-2" class="arrow" id="match-arrow" draggable="true">
                 </div>
+                
+            </div>
+            <div class="controls">
+                <div class="control pin-background"> <img src="./assets/Pin.svg" alt="add" class="pin-button"></div>
+                <div class="control"><img class="pause-play" src="./assets/Play.svg" alt="pause/play"></div>
+                <div class="control"><img src="./assets/Close.svg" alt="cancel" class="cancel"></div>
                 
             </div>
         </div>
@@ -38,7 +44,23 @@
                 <div class="center-circle">
                     <div class="dir-pointer"></div>  
         </div>
-        <input type="text" placeholder="degrees" id="numInput">
+        <table class="location-data">
+            <tr>
+                <th></th>
+                <th class="table-title">User</th>
+                <th class="table-title">Match</th>
+            </tr>
+            <tr>
+                <th>Latitude</th>
+                <td id="user-lat">12</td>
+                <td id="match-lat">20</td>
+            </tr>
+            <tr>
+                    <th>Longitude</th>
+                    <td id="user-lon">12</td>
+                    <td id="match-lon">20</td>
+                </tr>
+        </table>
         </div>
                 
         </div>

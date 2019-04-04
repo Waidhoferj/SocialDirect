@@ -4,7 +4,13 @@ const degreeEl = document.querySelector(".degree-label")
 const sendCircles = document.querySelectorAll(".send-circle")
 const board = document.querySelector(".board")
 const toggle = {online: document.querySelector("#online"), local: document.querySelector("#local")}
+const animationMenu = {play: document.querySelector(".pause-play"),
+                       close: document.querySelector(".cancel"),
+                       pinPlacer: document.querySelector(".pin-button"),
+                       placingPins: false,
+                        el: document.querySelector(".controls")}
 
+//TODO: switch client bounding boxes to computed styles
 
 const user = {
     el: document.querySelector(".user"),
@@ -13,9 +19,11 @@ const user = {
     heading: 0,
     x: 0,
     y: 0,
-    getPosition: function() {
-        return
-    }
+    table: {lat: document.getElementById("user-lat"), lon: document.getElementById("user-lon")},
+    getGeoPosition,
+    setPos,
+    waypoints: [],
+    walk
 }
 
 const match = {
@@ -24,19 +32,97 @@ const match = {
     circle: document.querySelector(".match .rotate-circle"),
     heading: 0,
     x: 0,
-    y: 0
+    y: 0,
+    table: {lat: document.getElementById("match-lat"), lon: document.getElementById("match-lon")},
+    getGeoPosition,
+    setPos,
+    waypoints: [],
+    walk
 }
-//Origin is in the top left, extent is in the bottom right. This maps out the rectangular area of the simulated space in lat, lon
+
+//Origin is in the top left, extent is in the bottom right. Used to create rectangular bounding box. Rectangle bounds Cal Poly. Ping rate in ms.
 const environment = {
     usingServer: false,
+    pingRate: 100,
     origin: {
-        lat: 1,
-        lon: 1,
+        lat: 35.309301,
+        lon: -120.670036,
     },
     extent: {
-        lat: 1,
-        lon: 2
+        lat: 35.297267, 
+        lon: -120.652539
     }
+}
+
+function pointDistance (p1, p2) {
+    return Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
+}
+
+
+function setPos(pxPoint) {
+    const offset = board.getClientRects()[0]
+    const elementPosition = this.el.getClientRects()[0]
+    this.x = 100 * (pxPoint.x - offset.left - elementPosition.width/2) / (offset.right - offset.left)
+    this.y = 100 * (pxPoint.y - offset.top - elementPosition.height/2) /(offset.bottom - offset.top)
+    this.table.lon.innerText = Math.round(this.x)
+    this.table.lat.innerText = Math.round(this.y)
+}
+
+function walk (duration) {
+    let totalDistance = 0;
+    let speed = 0
+    let steps = []
+    let prevPoint = this.waypoints[0]
+    let keyframes = [{duration: 0, destination: {x: 0, y: 0}, }]
+    //Find total distance to calculate individual animaiton duration
+    for (let i = 1; i< this.waypoints.length; i++) {
+        const waypointDist = pointDistance(waypoints[i], prevPoint)
+        prevPoint = waypoints[i]
+        totalDistance += waypointDist
+    }
+    speed = totalDistance/duration * 1000
+    prevPoint = this.waypoints[0]
+    //generate keyframe information CHANGE TO PERCENT
+    for (let i = 1; i < this.waypoints.length; i++) {
+        keyframes.append({duration:pointDistance(waypoints[i], prevPoint)/speed, destination: waypoints[i]})
+    }
+    let prevAnimationDuration = 0
+    //Create animation stages
+    for (let i = 1; i < keyframes.length; i++) {
+        const waypoint = new Promise((res, rej) => {
+            setTimeout(() => {
+                this.el.style.transition = `top ${keyframes[i].duration}s , left ${keyframes[i].duration}s`
+                this.el.style.left =  keyframes[i].destination.x + "%"
+                this.el.style.top =  keyframes[i].destination.y + "%"
+                res()
+            }, prevAnimationDuration + 100); //Added slop
+        })
+        steps.append(waypoint)
+    }
+    //Start tracking position
+    const positionTracker = setInterval(() => {
+        const style = window.getComputedStyle(this.el)
+        console.log(this.el.getClientRects()[0].top)
+        
+    }, 10);
+
+    //Set ping interval for online mode
+    
+    //Start animation
+
+
+
+}
+
+// user.walk()
+
+
+function getGeoPosition() {
+    const latRange = environment.extent.lat - environment.origin.lat
+    const lonRange = environment.extent.lon - environment.origin.lon
+    const lat = latRange*this.x + environment.origin.lat
+    const lon = lonRange*this.y + environment.origin.lon
+    return {lat, lon}
 }
 
 
@@ -51,26 +137,43 @@ function findInnerAngle(s1,s2, opSide) {
 }
 function bearingToMatch(user, match) {
     const angleFromOrigin = Math.atan((user.x - match.x)/ (user.y - match.y)) * 180/Math.PI + (user.y < match.y ? 180 : 0)
-    console.log(angleFromOrigin + user.heading)
     return -(angleFromOrigin + user.heading) 
 
 
 }
 
-
+// console.log("geoposition user", user.getGeoPosition())
+// console.log("geoposition user", match.getGeoPosition())
 function toggleMode(e) {
-    toggle.online.classList.remove("active-toggle")
-    toggle.local.classList.remove("active-toggle")
-    e.target.classList.add("active-toggle")
+    toggle.online.classList.remove("active")
+    toggle.local.classList.remove("active")
+    e.target.classList.add("active")
     if (e.target.id === "online") {
         environment.usingServer = true
     }
     else {
         environment.usingServer = false
+        point(bearingToMatch(user,match))
+
     }
 }
 
-//Manage Toggle
+
+//Toggle waypoint mode
+animationMenu.pinPlacer.addEventListener("click", (e) => {
+    console.log(document.querySelector(".pin-background"))
+    if (!animationMenu.placingPins) {
+        document.querySelector(".pin-background").classList.add("active")
+        animationMenu.placingPins = true
+    }
+    else {
+        document.querySelector(".pin-background").classList.remove("active")
+        animationMenu.placingPins = false
+    }
+    
+})
+
+//Manage Location Toggle
 toggle.online.addEventListener("click", (e) => {
     toggleMode(e)
 })
@@ -78,24 +181,35 @@ toggle.local.addEventListener("click", (e) => {
     toggleMode(e)
 })
 
+
+//Manage Animation Toggle 
+animationMenu.play.addEventListener("click", (e) => {
+    if (e.target.src.includes("Pause")) {
+        e.target.src = "./assets/Play.svg"
+    }
+    else {
+        e.target.src = "./assets/Pause.svg"
+    }
+})
+
+//Close the animation menu
+animationMenu.close.addEventListener("click", (e) => {
+    animationMenu.el.style.visibility = "hidden"
+})
+
+
 //Set initial positions
 window.addEventListener("load", (e) => {
     const userPos = user.el.getClientRects()[0]
     const matchPos = match.el.getClientRects()[0]
-    const offset = board.getClientRects()[0]
-    user.x = 100 * (userPos.x - offset.left - userPos.width/2) / (offset.right - offset.left)
-    user.y = 100 * (userPos.y - offset.top - userPos.height/2) /(offset.bottom - offset.top)
-
-    match.x = 100 * (matchPos.x - offset.left - matchPos.width/2) / (offset.right - offset.left)
-    match.y = 100 * (matchPos.y - offset.top - matchPos.height/2) /(offset.bottom - offset.top)
-
+    user.setPos(userPos)
+    match.setPos(matchPos)
     point(bearingToMatch(user,match))
-    // console.log(bearingToMatch(user,match))
+
 
 })
 
 //draggable
-console.log(match.arrow)
 user.arrow.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("class", ".user")
 })
@@ -107,37 +221,27 @@ board.ondragover = function(event) {
       };
 board.ondrop = (e) => {
     e.preventDefault()
-    const offset = board.getClientRects()[0]
     const itemClass = e.dataTransfer.getData("class")
-    const droppedItem =  document.querySelector(itemClass)
-    const {width, height} = droppedItem.getClientRects()[0]
+    // const droppedItem =  document.querySelector(itemClass)
+    // const {width, height} = droppedItem.getClientRects()[0]
     //Convert pixels into percentage
-    const x = 100 * (e.x - offset.left - width/2) / (offset.right - offset.left)
-    const y = 100 * (e.y - offset.top - height/2) /(offset.bottom - offset.top)
-    droppedItem.style.top = y +"%"
-    droppedItem.style.left = x +"%"
-    //Update position in object
     if (itemClass === ".user") {
-        user.x = x
-        user.y = y
+        user.setPos({x: e.x, y:e.y})
+        user.el.style.top = user.y +"%"
+        user.el.style.left = user.x +"%"
     }
     else {
-        match.x = x
-        match.y = y
+        match.setPos({x: e.x, y:e.y})
+        match.el.style.top = match.y +"%"
+        match.el.style.left = match.x +"%"
     }
-    point(bearingToMatch(user,match))
+    //Automatically update pointer if local
+    if (!environment.usingServer) {
+        point(bearingToMatch(user,match))
+    }
+    
 
 }
-
-//Input degree
-numInput.addEventListener("keyup", (e) => {
-    if (e.key === "Enter") {
-        if (!isNaN(e.target.value)) {
-            point(Number(e.target.value))
-        }
-        
-    }
-})
 
 
 //Send position
