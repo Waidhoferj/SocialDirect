@@ -3,6 +3,7 @@ const numInput = document.getElementById("numInput")
 const degreeEl = document.querySelector(".degree-label")
 const sendCircles = document.querySelectorAll(".send-circle")
 const board = document.querySelector(".board")
+const toggle = {online: document.querySelector("#online"), local: document.querySelector("#local")}
 
 
 const user = {
@@ -27,6 +28,7 @@ const match = {
 }
 //Origin is in the top left, extent is in the bottom right. This maps out the rectangular area of the simulated space in lat, lon
 const environment = {
+    usingServer: false,
     origin: {
         lat: 1,
         lon: 1,
@@ -37,51 +39,69 @@ const environment = {
     }
 }
 
-const userArrow = document.querySelector(".user-arrow")
-const matchArrow = document.querySelector(".match-arrow")
-//TODO: get bearing to match to work
-var matchDirection = bearingToMatch(user, match)
 
 
 function point (degree) {
-        if (!isNaN(degree)) {
-            const degree = event.target.value
             circle.style.transform = `rotate(${degree}deg)`
-            event.target.value = ""
-            degreeEl.innerText = degree + "º"
-        }
-        else {
-            degreeEl.innerText = "Only input numbers"
-        }
+            degreeEl.innerText = Math.round(degree) + "º"
     }
 
 function findInnerAngle(s1,s2, opSide) {
     return Math.acos((s1**2 + s2**2 - opSide**2)/(2*s1*s2)) * 180/Math.PI
 }
 function bearingToMatch(user, match) {
-    const angleFromOrigin = Math.atan((match.x - user.x)/ (match.y - user.y)) * 180/Math.PI + match.x < user.x ? 180 : 0
-    return angleFromOrigin - user.heading 
+    const angleFromOrigin = Math.atan((user.x - match.x)/ (user.y - match.y)) * 180/Math.PI + (user.y < match.y ? 180 : 0)
+    console.log(angleFromOrigin + user.heading)
+    return -(angleFromOrigin + user.heading) 
 
 
 }
 
+
+function toggleMode(e) {
+    toggle.online.classList.remove("active-toggle")
+    toggle.local.classList.remove("active-toggle")
+    e.target.classList.add("active-toggle")
+    if (e.target.id === "online") {
+        environment.usingServer = true
+    }
+    else {
+        environment.usingServer = false
+    }
+}
+
+//Manage Toggle
+toggle.online.addEventListener("click", (e) => {
+    toggleMode(e)
+})
+toggle.local.addEventListener("click", (e) => {
+    toggleMode(e)
+})
+
+//Set initial positions
 window.addEventListener("load", (e) => {
     const userPos = user.el.getClientRects()[0]
     const matchPos = match.el.getClientRects()[0]
     const offset = board.getClientRects()[0]
-    user.x = userPos.x - offset.left - userPos.width/2
-    user.y = userPos.y - offset.top - userPos.height/2
-    match.x = matchPos.x - offset.left - matchPos.width/2
-    match.y = matchPos.y - offset.top - matchPos.height/2
+    user.x = 100 * (userPos.x - offset.left - userPos.width/2) / (offset.right - offset.left)
+    user.y = 100 * (userPos.y - offset.top - userPos.height/2) /(offset.bottom - offset.top)
+
+    match.x = 100 * (matchPos.x - offset.left - matchPos.width/2) / (offset.right - offset.left)
+    match.y = 100 * (matchPos.y - offset.top - matchPos.height/2) /(offset.bottom - offset.top)
+
+    point(bearingToMatch(user,match))
+    // console.log(bearingToMatch(user,match))
+
 })
 
 //draggable
-user.arrow.ondragstart =  (e) => {
+console.log(match.arrow)
+user.arrow.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("class", ".user")
-}
-match.arrow.ondragstart =  (e) => {
+})
+match.arrow.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("class", ".match")
-}
+})
 board.ondragover = function(event) {
         event.preventDefault();
       };
@@ -91,27 +111,31 @@ board.ondrop = (e) => {
     const itemClass = e.dataTransfer.getData("class")
     const droppedItem =  document.querySelector(itemClass)
     const {width, height} = droppedItem.getClientRects()[0]
-    const x = e.x - offset.left - width/2
-    const y = e.y - offset.top - height/2
-    droppedItem.style.top = y +"px"
-    droppedItem.style.left = x +"px"
+    //Convert pixels into percentage
+    const x = 100 * (e.x - offset.left - width/2) / (offset.right - offset.left)
+    const y = 100 * (e.y - offset.top - height/2) /(offset.bottom - offset.top)
+    droppedItem.style.top = y +"%"
+    droppedItem.style.left = x +"%"
+    //Update position in object
     if (itemClass === ".user") {
         user.x = x
         user.y = y
-        console.log("user", user)
     }
     else {
         match.x = x
         match.y = y
-        console.log("Match x", match.x)
     }
+    point(bearingToMatch(user,match))
 
 }
 
 //Input degree
 numInput.addEventListener("keyup", (e) => {
     if (e.key === "Enter") {
-        point(e.target.value)
+        if (!isNaN(e.target.value)) {
+            point(Number(e.target.value))
+        }
+        
     }
 })
 
@@ -141,22 +165,9 @@ user.circle.addEventListener("click", (e) => {
     const s2 = center.y - top.y
     const opSide = Math.sqrt((e.x - top.x)**2 + (e.y - top.y)**2)
     const angle =  (e.x < center.x ? 180 - findInnerAngle(s1, s2, opSide) + 180 : findInnerAngle(s1, s2, opSide))
+    //Set new user heading
     user.el.style.transform = `rotate(${angle}deg)`
     user.heading = angle
-})
-
-match.circle.addEventListener("click", (e) => {
-    const pos = match.circle.getClientRects()[0]
-    const center = {x: pos.left + pos.width /2, y: pos.top + pos.height / 2}
-    const top = {x: pos.left + pos.width /2, y: pos.top}
-    const s1 = Math.sqrt((e.x - center.x)**2 + (e.y - center.y)**2)
-    const s2 = center.y - top.y
-    const opSide = Math.sqrt((e.x - top.x)**2 + (e.y - top.y)**2)
-    const angle =  (e.x < center.x ? 180 - findInnerAngle(s1, s2, opSide) + 180 : findInnerAngle(s1, s2, opSide))
-    match.el.style.transform = `rotate(${angle}deg)`
-    match.heading = angle
-})
-
-match.circle.addEventListener("mousedown", (e) => {
-
+    //update compass
+    point(bearingToMatch(user, match))
 })

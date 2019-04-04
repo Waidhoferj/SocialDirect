@@ -1,6 +1,7 @@
 html {
     font-family: Arial, Helvetica, sans-serif;
     background: whitesmoke;
+    font-size: 25px
 }
 
 .send-circle {
@@ -13,13 +14,43 @@ html {
     border-radius: 50%;
 }
 
+
+.toggle-bar {
+    position: relative;
+    display: flex;
+    width: 20vw;
+    border: 3px solid #09B8FF;
+    height: 30px;
+    border-radius: 3vw;
+    margin: 25px auto;
+    overflow: hidden;
+    
+}
+
+.toggle {
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    width: 50%;
+    height: 100%;
+    font-size: 1rem;
+}
+
+
+
+.active-toggle {
+    background: rgb(157, 227, 255)
+}
+
+
+
 .container {
     position: absolute;
     left: 50%;
     top:50%;
     width: 90%;
     transform: translate(-50%,-50%);
-    height: 90%;
+    height: auto;
     text-align: center;
     display: flex;
 
@@ -67,7 +98,7 @@ html {
     height:3vw;
     padding: 10px;
     position: absolute;
-    top: 25%;
+    top: 75%;
     left: 75%;
     transition: transform 0.5s;
 }
@@ -111,6 +142,7 @@ html {
 .arrow {
     width: 75%;
     height: auto;
+    z-index: 200;
 }
 
 
@@ -124,8 +156,8 @@ html {
 
 .center-circle {
     position: relative;
-    width: 300px;
-    height: 300px;
+    width: 25vw;
+    height: 25vw;
     background:#09B8FF;
     border-radius:  50%;
     margin: auto;
@@ -137,8 +169,8 @@ html {
     left: 50%;
     top:10%;
     transform: translateX(-50%);
-    width: 30px;
-    height: 100px;
+    width: 10%;
+    height: 40%;
     border-radius: 10px; 
     background: white;
     border-top-left-radius: 50px;
@@ -146,7 +178,7 @@ html {
 }
 
 #numInput {
-    font-size: 30px;
+    font-size: 1.2rem;
     text-align: center;
     background: transparent;
     border: none;
@@ -156,7 +188,7 @@ html {
 
 .degree-label {
     color: #09B8FF;
-    font-size: 50px;
+    font-size: 2rem;
     padding: none;
 
 }
@@ -179,4 +211,16 @@ html {
        height: 150px;
        opacity: 0;
    } 
+}
+
+/* Scalability */ 
+@media screen and (max-width: 1000px) {
+    html {
+        font-size: 15px
+    }
+    .toggle {
+        padding-top: 5px;
+    }
+
+    
 }

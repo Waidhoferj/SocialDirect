@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 53.2 (72643) - https://sketchapp.com -->
+    <title>arrow</title>
+    <desc>Created with Sketch.</desc>
+    <g id="arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M26.7888544,3.57770876 C34.5259029,19.0518058 42.2629515,34.5259029 50,50 C35.2720398,50 37.5,37.9302858 25,37.9302858 C12.5,37.9302858 14.3397248,50 0,50 C7.73704854,34.5259029 15.4740971,19.0518058 23.2111456,3.57770876 L23.2111456,3.57770876 C23.7051241,2.58975177 24.9064702,2.18930308 25.8944272,2.68328157 C26.281482,2.87680898 26.595327,3.19065396 26.7888544,3.57770876 Z" id="Rectangle" fill="#126BC7"></path>
+    </g>
+</svg>
