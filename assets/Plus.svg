@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="82px" height="82px" viewBox="0 0 82 82" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 53.2 (72643) - https://sketchapp.com -->
+    <title>Plus</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Plus" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40.790368, 40.790368) rotate(-315.000000) translate(-40.790368, -40.790368) translate(6.290368, 6.290368)" fill="#4899CD" fill-rule="nonzero">
+            <g id="Group" transform="translate(34.386562, 34.386562) rotate(-45.000000) translate(-34.386562, -34.386562) translate(-6.613438, 26.886562)">
+                <rect id="Rectangle-Copy" transform="translate(40.767152, 7.321422) rotate(90.000000) translate(-40.767152, -7.321422) " x="33.7671522" y="-33.1785779" width="14" height="81" rx="7"></rect>
+            </g>
+            <g id="Group-Copy" transform="translate(34.294679, 34.294679) rotate(45.000000) translate(-34.294679, -34.294679) translate(-6.705321, 26.794679)">
+                <rect id="Rectangle-Copy" transform="translate(40.767152, 7.321422) rotate(90.000000) translate(-40.767152, -7.321422) " x="33.7671522" y="-33.1785779" width="14" height="81" rx="7"></rect>
+            </g>
+        </g>
+    </g>
+</svg>

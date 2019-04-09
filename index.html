@@ -1,70 +1,108 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" media="screen" href="style.css">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="style.css" />
     <title>Location Tester</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="send-circle">
-        <div class="send-circle">
-            <div class="send-circle">
-
-            </div>
-        </div>
+      <div class="send-circle">
+        <div class="send-circle"></div>
+      </div>
     </div>
-    <nav><div class="toggle-bar">
-        <a href="#local" class="toggle active" id="local">Local</a> <a href="#online" class="toggle" id="online">Online</a>
-    </div></nav>
+    <nav>
+      <div class="toggle-bar">
+        <a href="#local" class="toggle active" id="local">Local</a>
+        <a href="#online" class="toggle" id="online">Online</a>
+      </div>
+    </nav>
     <div class="container">
-        <div class="birds-eye">
-            <div class="board">
-                <div class="user">
-                        <div class="rotate-circle"></div>
-                        <img src="./assets/arrow.svg" alt="person-1" class="arrow" id="user-arrow" draggable="true">
-                </div>
+      <div class="birds-eye">
+        <div class="board">
+          <!-- <div class="user">
+            <img
+              src="./assets/arrow.svg"
+              alt="person-1"
+              class="arrow"
+              id="user-arrow"
+              draggable="true"
+            />
+          </div>
 
-                <div class="match">
-                        <img src="./assets/arrow.svg" alt="person-2" class="arrow" id="match-arrow" draggable="true">
-                </div>
-                
-            </div>
-            <div class="controls">
-                <div class="control pin-background"> <img src="./assets/Pin.svg" alt="add" class="pin-button"></div>
-                <div class="control"><img class="pause-play" src="./assets/Play.svg" alt="pause/play"></div>
-                <div class="control"><img src="./assets/Close.svg" alt="cancel" class="cancel"></div>
-                
-            </div>
+          <div class="match">
+            <img
+              src="./assets/arrow.svg"
+              alt="person-2"
+              class="arrow"
+              id="match-arrow"
+              draggable="true"
+            />
+          </div> -->
+          <div class="user-menu">
+            <img
+              class="user-menu-item"
+              id="deleteButton"
+              src="./assets/Close.svg"
+              alt="delete"
+            />
+            <img
+              class="user-menu-item"
+              id="pinButton"
+              src="./assets/Pin.svg"
+              alt="delete"
+            />
+            <div class="user-menu-item" id="seekerButton">S</div>
+            <div class="user-menu-item" id="matchButton">M</div>
+          </div>
         </div>
-        <div class="direction">
-                <p class="degree-label">0º</p>
-                <div class="center-circle">
-                    <div class="dir-pointer"></div>  
+        <a href="#" id="changeBackground">Change background</a>
+        <div class="controls">
+          <div class="control">
+            <img
+              class="control-img"
+              id="addControl"
+              src="./assets/Plus.svg"
+              alt="Add"
+            />
+          </div>
+          <div class="control">
+            <img
+              class="control-img"
+              id="playControl"
+              src="./assets/Play.svg"
+              alt="pause/play"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="direction">
+        <p class="degree-label">0º</p>
+        <div class="center-circle">
+          <div class="dir-pointer"></div>
         </div>
         <table class="location-data">
-            <tr>
-                <th></th>
-                <th class="table-title">User</th>
-                <th class="table-title">Match</th>
-            </tr>
-            <tr>
-                <th>Latitude</th>
-                <td id="user-lat">12</td>
-                <td id="match-lat">20</td>
-            </tr>
-            <tr>
-                    <th>Longitude</th>
-                    <td id="user-lon">12</td>
-                    <td id="match-lon">20</td>
-                </tr>
+          <tr>
+            <th></th>
+            <th class="table-title">User</th>
+            <th class="table-title">Match</th>
+          </tr>
+          <tr>
+            <th>Latitude</th>
+            <td id="user-lat">12</td>
+            <td id="match-lat">20</td>
+          </tr>
+          <tr>
+            <th>Longitude</th>
+            <td id="user-lon">12</td>
+            <td id="match-lon">20</td>
+          </tr>
         </table>
-        </div>
-                
-        </div>
+      </div>
+    </div>
+    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
     <script src="main.js"></script>
-</body>
-
+  </body>
 </html>
