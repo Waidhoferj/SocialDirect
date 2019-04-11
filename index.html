@@ -22,40 +22,24 @@
     <div class="container">
       <div class="birds-eye">
         <div class="board">
-          <!-- <div class="user">
-            <img
-              src="./assets/arrow.svg"
-              alt="person-1"
-              class="arrow"
-              id="user-arrow"
-              draggable="true"
-            />
-          </div>
-
-          <div class="match">
-            <img
-              src="./assets/arrow.svg"
-              alt="person-2"
-              class="arrow"
-              id="match-arrow"
-              draggable="true"
-            />
-          </div> -->
           <div class="user-menu">
-            <img
-              class="user-menu-item"
-              id="deleteButton"
-              src="./assets/Close.svg"
-              alt="delete"
-            />
-            <img
-              class="user-menu-item"
-              id="pinButton"
-              src="./assets/Pin.svg"
-              alt="delete"
-            />
-            <div class="user-menu-item" id="seekerButton">S</div>
-            <div class="user-menu-item" id="matchButton">M</div>
+            <div class="username">John</div>
+            <div class="user-buttons">
+              <img
+                class="user-menu-item"
+                id="deleteButton"
+                src="./assets/Close.svg"
+                alt="delete"
+              />
+              <img
+                class="user-menu-item"
+                id="pinButton"
+                src="./assets/Pin.svg"
+                alt="delete"
+              />
+              <div class="user-menu-item" id="seekerButton">S</div>
+              <div class="user-menu-item" id="matchButton">M</div>
+            </div>
           </div>
         </div>
         <a href="#" id="changeBackground">Change background</a>
@@ -83,20 +67,21 @@
         <div class="center-circle">
           <div class="dir-pointer"></div>
         </div>
+        <div class="distance">Distance: 50ft</div>
         <table class="location-data">
           <tr>
             <th></th>
-            <th class="table-title">User</th>
+            <th class="table-title">Seeker</th>
             <th class="table-title">Match</th>
           </tr>
           <tr>
             <th>Latitude</th>
-            <td id="user-lat">12</td>
+            <td id="seeker-lat">12</td>
             <td id="match-lat">20</td>
           </tr>
           <tr>
             <th>Longitude</th>
-            <td id="user-lon">12</td>
+            <td id="seeker-lon">12</td>
             <td id="match-lon">20</td>
           </tr>
         </table>

@@ -1,9 +1,10 @@
 //CLASSES
 //--------------------------------------------------------------
 class Applet {
-  constructor(compass, board) {
+  constructor(compass, board, locationTable) {
     this.compass = compass;
     this.board = board;
+    this.locationTable = locationTable;
     this.toggle = {
       online: document.querySelector("#online"),
       local: document.querySelector("#local")
@@ -14,7 +15,9 @@ class Applet {
     this.sendCircles = document.querySelectorAll(".send-circle");
     this._createEvents();
   }
-
+  /**
+   * Sends positions of users to the server.
+   */
   postLocations() {
     let locations = [];
     for (let i = 0; i < this.board.users.length; i++) {
@@ -30,6 +33,23 @@ class Applet {
 
     Promise.all(locations);
   }
+  /**
+   * Updates the UI with the inputted position.
+   * @param {lat (y), lon(x)} seekerPos position of seeker
+   * @param {lat(y), lon(x)} matchPos position of match
+   * @return void
+   */
+  updateLocation(seekerPos, matchPos) {
+    if (seekerPos.hasOwnProperty("lat")) {
+      seekerPos.y = seekerPos.lat;
+      seekerPos.x = seekerPos.lon;
+      matchPos.y = matchPos.lat;
+      matchPos.x = matchPos.lon;
+    }
+    this.compass.point(bearingToMatch(app.board.seeker, app.board.match));
+    this.board.seeker.setGeoPos(seekerPos);
+    this.board.match.setGeoPos(matchPos);
+  }
 
   toggleMode(e) {
     this.toggle.online.classList.remove("active");
@@ -39,7 +59,7 @@ class Applet {
       this.usingServer = true;
       this.pingInterval = setInterval(() => {
         console.log("pinging");
-        //postLocation()
+        postLocation();
       }, this.pingRate);
     } else {
       this.usingServer = false;
@@ -74,7 +94,16 @@ class Applet {
     });
     //create events for children
     this.board._createEvents();
-    this.compass._createEvents();
+  }
+}
+//TODO: build out gauges class
+class Gauges {
+  constructor() {
+    this.compass = new Compass(
+      document.querySelector(".center-circle"),
+      document.querySelector(".degree-label")
+    );
+    this.table = new LocationTable();
   }
 }
 
@@ -88,8 +117,27 @@ class Compass {
     this.el.style.transform = `rotate(${degree}deg)`;
     this.label.innerText = Math.round(degree) + "º";
   }
+}
 
-  _createEvents() {}
+class LocationTable {
+  costructor() {
+    this.seekerLocation = {
+      lat: document.getElementById("seeker-lat"),
+      lon: document.getElementById("seeker-lon")
+    };
+
+    this.matchLocation = {
+      lat: document.getElementById("match-lat"),
+      lon: document.getElementById("match-lon")
+    };
+  }
+
+  update(seekerPos, matchPos) {
+    this.seekerLocation.lat.innerText = seekerPos.lat;
+    this.seekerLocation.lon.innerText = seekerPos.lon;
+    this.matchLocation.lat.innerText = matchPos.lat;
+    this.matchLocation.lon.innerText = matchPos.lon;
+  }
 }
 
 class Board {
@@ -97,7 +145,18 @@ class Board {
     this.seeker = null;
     this.match = null;
     //TODO: make some uids
-    this.uids = ["Josh"];
+    this.uids = [
+      "Josh",
+      "Courtney",
+      "Fred",
+      "Amanda",
+      "Brittany",
+      "Rodger",
+      "John",
+      "Jess",
+      "Kath",
+      "Doug"
+    ];
     this.users = [];
     this.numOfUsers = 0;
     this.selectedUser = null;
@@ -110,11 +169,13 @@ class Board {
     this.userOptions = {
       el: document.querySelector(".user-menu"),
       target: null,
+      username: document.querySelector(".username"),
       pin: document.querySelector("#pinButton"),
       delete: document.querySelector("#deleteButton"),
       seeker: document.querySelector("#seekerButton"),
       match: document.querySelector("#matchButton")
     };
+    this.placingPins = false;
 
     this.geo = {
       origin: { lat: 35.309301, lon: -120.670036 },
@@ -129,33 +190,101 @@ class Board {
     this.el.style.background = this.backgrounds[this.backgroundIndex];
   }
 
+  initState() {
+    const seeker = this.addUser();
+    const match = this.addUser();
+    this.selectedUser = seeker;
+    this.selectSeeker();
+    this.selectedUser = match;
+    this.selectMatch();
+    for (let user of this.users) {
+      const userPos = user.el.getClientRects()[0];
+      user.setPos(userPos);
+    }
+  }
+
   addUser() {
     if (this.numOfUsers > 10) {
       alert("Max number of users reached");
       return;
     }
-    const newUser = new Person("user-" + this.numOfUsers);
-    console.log("users", this.users);
+    const newUser = new Person(this.uids.pop());
     this.users.push(newUser);
     this.numOfUsers++;
     this.el.appendChild(newUser.el);
+    const pos = newUser.el.getClientRects()[0];
+    newUser.setPos(pos);
     return newUser;
   }
 
-  selectSeeker(id) {
-    for (user of this.users) {
-      if (user.id == id) {
+  removeUser() {
+    if (this.users.length < 3) {
+      alert("You must have two users present.");
+      return;
+    }
+    let removalIndex;
+    for (let i = 0; i < this.users.length; i++) {
+      if (this.users[i].id == this.selectedUser.id) {
+        removalIndex = i;
+        break;
       }
     }
-    this.seeker.arrow.style.filter = "";
-    this.selectedUser.arrow.style.filter = "invert(0.7)";
-    this.seeker = selectedUser;
+    const userToRemove = this.selectedUser;
+    if (userToRemove == this.seeker) {
+      if (removalIndex > 0) {
+        this.selectedUser = this.users[0];
+      } else {
+        this.selectedUser = this.users[1];
+      }
+      this.selectSeeker();
+    } else if (userToRemove == this.match) {
+      if (removalIndex > 0) {
+        this.selectedUser = this.users[0];
+      } else {
+        this.selectedUser = this.users[1];
+      }
+      this.selectMatch();
+    }
+
+    this.users.splice(removalIndex, 1);
+    this.el.removeChild(userToRemove.el);
+    this.uids.push(userToRemove.id);
+    this.selectedUser = null;
+  }
+
+  swapSeekerAndMatch() {
+    this.match.arrow.classList.remove("match");
+    this.match.arrow.classList.add("seeker");
+    this.seeker.arrow.classList.remove("seeker");
+    this.seeker.arrow.classList.add("match");
+    const temp = this.match;
+    this.match = this.seeker;
+    this.seeker = temp;
+  }
+
+  selectSeeker() {
+    if (this.match == this.selectedUser) {
+      this.swapSeekerAndMatch();
+      return;
+    }
+    if (this.seeker) {
+      this.seeker.arrow.classList.remove("seeker");
+    }
+    this.seeker = this.selectedUser;
+    this.seeker.arrow.classList.add("seeker");
   }
 
   selectMatch() {
-    this.match.arrow.style.filter = "";
-    this.selectedUser.arrow.style.filter = "invert(0.3)";
-    this.match = selectedUser;
+    if (this.seeker == this.selectedUser) {
+      this.swapSeekerAndMatch();
+      return;
+    }
+    if (this.match) {
+      this.match.arrow.classList.remove("match");
+    }
+
+    this.match = this.selectedUser;
+    this.match.arrow.classList.add("match");
   }
 
   _createEvents() {
@@ -163,14 +292,27 @@ class Board {
     this.menu.play.addEventListener("click", e => {
       if (e.target.src.includes("Pause")) {
         e.target.src = "./assets/Play.svg";
+        for (let i = 0; i < this.users.length; i++) {
+          this.users[i].isAnimating = false;
+        }
       } else {
+        for (let user of this.users) {
+          user.selected = false;
+          user.el.classList.remove("selected");
+        }
+        this.userOptions.el.style.visibility = "hidden";
+        this.selectedUser.waypoints.forEach(waypoint => {
+          waypoint.el.style.visibility = "hidden";
+        });
         e.target.src = "./assets/Pause.svg";
+        for (let i = 0; i < this.users.length; i++) {
+          this.users[i].simpleWalk();
+        }
       }
     });
 
     //Adding users
     this.menu.add.addEventListener("click", e => {
-      console.log("add user");
       this.addUser();
     });
     //Background Toggling
@@ -191,6 +333,7 @@ class Board {
       for (let user of this.users) {
         if (user.id === identifier) {
           user.setPos({ x: e.x, y: e.y });
+
           user.el.style.top = user.y + "%";
           user.el.style.left = user.x + "%";
           if (user.selected) {
@@ -201,36 +344,59 @@ class Board {
       //Automatically update pointer if local UPDATE SEEKER
       if (!app.usingServer) {
         app.compass.point(bearingToMatch(this.seeker, this.match));
+        app.locationTable.update(
+          this.seeker.getGeoPosition(),
+          this.match.getGeoPosition()
+        );
       }
     };
 
-    //Deselect arrows
+    //Add Pins and Deselect arrows
     this.el.addEventListener("click", e => {
-      for (let user of this.users) {
-        user.selected = false;
-        user.el.classList.remove("selected");
+      if (this.placingPins) {
+        this.selectedUser.addWaypoint({ x: e.x, y: e.y });
+        this.placingPins = false;
+      } else {
+        for (let user of this.users) {
+          user.selected = false;
+          user.el.classList.remove("selected");
+        }
+        this.userOptions.el.style.visibility = "hidden";
+        this.selectedUser.waypoints.forEach(waypoint => {
+          waypoint.el.style.visibility = "hidden";
+        });
       }
-      this.userOptions.el.style.visibility = "hidden";
     });
 
     //Place Pins
     this.userOptions.pin.addEventListener("click", e => {
-      console.log("Place Pins");
+      this.placingPins = true;
+      e.stopImmediatePropagation();
     });
 
     //Remove User
     this.userOptions.delete.addEventListener("click", e => {
-      console.log("Remove User");
+      this.removeUser();
     });
 
     //Set user as Seeker
     this.userOptions.seeker.addEventListener("click", e => {
-      console.log("Seeker");
+      this.selectSeeker();
+      app.compass.point(bearingToMatch(app.board.seeker, app.board.match));
+      app.locationTable.update(
+        this.seeker.getGeoPosition(),
+        this.match.getGeoPosition()
+      );
     });
 
     //Set user as Match
     this.userOptions.match.addEventListener("click", e => {
-      console.log("Match");
+      this.selectMatch();
+      app.compass.point(bearingToMatch(app.board.seeker, app.board.match));
+      app.locationTable.update(
+        this.seeker.getGeoPosition(),
+        this.match.getGeoPosition()
+      );
     });
   }
 }
@@ -245,6 +411,7 @@ class Person {
     this.y = 0;
     this.waypoints = [];
     this._createEvents();
+    this.isAnimating = false;
   }
 
   _createElements() {
@@ -278,6 +445,7 @@ class Person {
     @returns An object with latitude and longitude properties 
     */
   setPos(pxPoint) {
+    //converts point to percentage and assigns to Person
     const offset = app.board.el.getClientRects()[0];
     const elementPosition = this.el.getClientRects()[0];
     this.x =
@@ -287,69 +455,71 @@ class Person {
       (100 * (pxPoint.y - offset.top - elementPosition.height / 2)) /
       (offset.bottom - offset.top);
   }
-  /**
-    Creates and executes a walking animation to set waypoints on the board
-     * @param {Number} duration how long the animation should last in miliseconds
-     */
-  walk(duration) {
-    let totalDistance = 0;
-    let speed = 0;
-    let steps = [];
-    let prevPoint = this.waypoints[0];
-    let keyframes = [{ duration: 0, destination: { x: 0, y: 0 } }];
-    //Find total distance to calculate individual animaiton duration
-    for (let i = 1; i < this.waypoints.length; i++) {
-      const waypointDist = pointDistance(this.waypoints[i], prevPoint);
-      prevPoint = this.waypoints[i];
-      totalDistance += waypointDist;
-    }
-    speed = totalDistance / (duration * 1000);
-    prevPoint = this.waypoints[0];
-    //generate keyframe information CHANGE TO PERCENT
-    for (let i = 1; i < this.waypoints.length; i++) {
-      //TODO returning NaN
-      console.log("obj", {
-        duration: pointDistance(this.waypoints[i], prevPoint) / speed,
-        destination: this.waypoints[i]
-      });
-      keyframes.push({
-        duration: pointDistance(this.waypoints[i], prevPoint) / speed,
-        destination: this.waypoints[i]
-      });
-    }
 
-    //Create animation stages
-    for (let i = 1; i < keyframes.length; i++) {
-      const waypoint = new Promise(res => {
-        this.el.style.transition = `top ${keyframes[i].duration}s , left ${
-          keyframes[i].duration
-        }s`;
-        this.el.style.left = keyframes[i].destination.x + "%";
-        this.el.style.top = keyframes[i].destination.y + "%";
-        setTimeout(() => {
-          res();
-        }, keyframes[i].duration);
-      });
-
-      steps.push(waypoint);
-    }
-    //update position
-    const positionTracker = setInterval(() => {
-      this.setPos(this.el.getClientRects()[0]);
-    }, 10);
-
-    setTimeout(() => {
-      clearInterval(positionTracker);
-    }, duration);
-
-    //Start animation
-    this._animateWalk(steps);
+  setGeoPos(userPos) {
+    //convert to percentage
+    const { origin, extent } = app.board.geo;
+    const x = (userPos.lon - origin.lon) / (extent.lon - origin.lon);
+    const y = (userPos.lat - origin.lat) / (extent.lat - origin.lat);
+    //set the position
+    this.el.style.top = y + "%";
+    this.el.style.left = x + "%";
   }
-  async _animateWalk(path) {
-    for (const point of path) {
-      await point;
+
+  //Will be adapted to handle multiple waypoints in the future (in order to make walk work)
+  addWaypoint(point) {
+    //convert to percentage
+    const offset = app.board.el.getClientRects()[0];
+    const x = (100 * (point.x - offset.left)) / (offset.right - offset.left);
+    const y = (100 * (point.y - offset.top)) / (offset.bottom - offset.top);
+
+    let el;
+    if (this.waypoints.length > 0) {
+      el = this.waypoints[0].el;
+      this.waypoints[0].x = x;
+      this.waypoints[0].y = y;
+      el.style.visibility = "visible";
+    } else {
+      el = document.createElement("img");
+      el.className = "waypoint";
+      el.src = "./assets/Pin.svg";
+      app.board.el.appendChild(el);
+      this.waypoints.push({ el, x, y });
     }
-    console.log("Done with walk");
+
+    el.style.top = y - 3 + "%";
+    el.style.left = x - 1.5 + "%";
+  }
+
+  simpleWalk() {
+    if (this.waypoints.length == 0) {
+      return;
+    }
+    this.isAnimating = true;
+    const waypointDirection = bearingToPoint(this, this.waypoints[0]);
+    this.el.classList.add("walk");
+    this.el.style.transform = `rotate(${waypointDirection}deg)`;
+    const elOffset = 7.5;
+    const updateLocation = setInterval(() => {
+      const { x, y } = this.el.getClientRects()[0];
+      this.setPos({ x, y });
+      if (!this.isAnimating) {
+        this.el.style.top = this.y + elOffset + "%";
+        this.el.style.left = this.x + elOffset + "%";
+        this.el.classList.remove("walk");
+        clearTimeout(cleanup);
+        clearInterval(updateLocation);
+      }
+    }, 100);
+    const cleanup = setTimeout(() => {
+      this.el.classList.remove("walk");
+      clearInterval(updateLocation);
+      this.isAnimating = false;
+      app.board.menu.play.src = "./assets/Play.svg";
+      console.log("cleaned up");
+    }, 5100);
+    this.el.style.top = this.waypoints[0].y - elOffset + "%";
+    this.el.style.left = this.waypoints[0].x - elOffset + "%";
   }
   /**
 Provides the location for the user menu
@@ -360,13 +530,14 @@ Provides the location for the user menu
     const { userOptions } = app.board;
     userOptions.el.style.visibility = "visible";
     userOptions.el.style.left = this.x - this.el.style.width + "%";
-    userOptions.el.style.top = this.y - 7 + "%";
+    userOptions.el.style.top = this.y - 11 + "%";
+    userOptions.username.innerText = this.id;
+    app.board.selectedUser = this;
   }
 
   _createEvents() {
     this.arrow.addEventListener("dragstart", e => {
       e.dataTransfer.setData("identifier", this.id);
-      console.log("identifier:", this.id);
     });
     //Rotation logic
     this.el.addEventListener("click", e => {
@@ -399,6 +570,9 @@ Provides the location for the user menu
       this.selected = true;
       this.el.classList.add("selected");
       this.displayMenu();
+      this.waypoints.forEach(waypoint => {
+        waypoint.el.style.visibility = "visible";
+      });
       e.stopImmediatePropagation();
     });
   }
@@ -414,6 +588,14 @@ function findInnerAngle(s1, s2, opSide) {
   return (
     (Math.acos((s1 ** 2 + s2 ** 2 - opSide ** 2) / (2 * s1 * s2)) * 180) /
     Math.PI
+  );
+}
+
+function bearingToPoint(currentPos, dest) {
+  return -(
+    (Math.atan((currentPos.x - dest.x) / (currentPos.y - dest.y)) * 180) /
+      Math.PI +
+    (currentPos.y < dest.y ? 180 : 0)
   );
 }
 
@@ -433,18 +615,12 @@ const compass = new Compass(
   document.querySelector(".degree-label")
 );
 const board = new Board();
-const app = new Applet(compass, board);
+const locationTable = new LocationTable();
+const app = new Applet(compass, board, locationTable);
 
 //INITIAL SETUP
 //-------------------------------------------------------------------------------------
 window.addEventListener("load", e => {
-  const seeker = app.board.addUser();
-  const match = app.board.addUser();
-  app.board.match = match;
-  app.board.seeker = seeker;
-  for (let user of app.board.users) {
-    const userPos = user.el.getClientRects()[0];
-    user.setPos(userPos);
-  }
+  app.board.initState();
   app.compass.point(bearingToMatch(app.board.seeker, app.board.match));
 });

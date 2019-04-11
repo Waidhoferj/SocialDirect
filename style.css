@@ -90,7 +90,7 @@ html {
 .user {
   width: 3vw;
   height: 3vw;
-  padding: 10px;
+  padding: 1vw;
   position: absolute;
   transition: transform 0.5s, border 0.5s;
   border: 2px solid transparent;
@@ -99,6 +99,15 @@ html {
 
 .user:hover {
   border: 2px solid #0773ba;
+}
+
+.walk {
+  transition: top 5s, left 5s, transform 0.5s;
+}
+
+.waypoint {
+  position: absolute;
+  width: 1vw;
 }
 
 /* Unused */
@@ -112,6 +121,14 @@ html {
   border: 0px solid #09b8ff;
   border-radius: 50%;
   transition: border 0.5s;
+}
+
+.seeker {
+  filter: hue-rotate(180deg);
+}
+
+.match {
+  filter: invert(1.2);
 }
 
 /* Unused */
@@ -136,9 +153,21 @@ html {
 .user-menu {
   visibility: hidden;
   position: absolute;
-  display: flex;
+
+  width: 3vw;
+}
+
+.username {
+  margin-left: 25%;
+  text-align: center;
+  font-size: 1em;
+  color: #0773ba;
+}
+
+.user-buttons {
   width: 3vw;
   height: 2vw;
+  display: flex;
 }
 
 .user-menu-item {
