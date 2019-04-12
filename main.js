@@ -1,14 +1,15 @@
 //CLASSES
 //--------------------------------------------------------------
 class Applet {
-  constructor(compass, board, locationTable) {
-    this.compass = compass;
-    this.board = board;
-    this.locationTable = locationTable;
+  constructor() {
+    this.dataDisplay = new DataDisplay();
+    this.board = new Board();
+    this.settingsPopup = new SettingsPopup();
     this.toggle = {
       online: document.querySelector("#online"),
       local: document.querySelector("#local")
     };
+    this.settingsButton = document.getElementById("settings-button");
     this.usingServer = false;
     this.pingInterval = null;
     this.pingRate = 500;
@@ -16,22 +17,29 @@ class Applet {
     this._createEvents();
   }
   /**
-   * Sends positions of users to the server.
+   * Sends positions of users to the server. Each post is sent with lat, lon and heading of the user
+   *
    */
   postLocations() {
-    let locations = [];
-    for (let i = 0; i < this.board.users.length; i++) {
-      locations.push(
-        new Promise((resolve, reject) => {
-          axios.post(
-            //url,
-            this.board.users[i].getGeoPosition()
-          );
-        })
-      );
-    }
+    return; //remove this
+    let seekerPos = this.board.seeker.getGeoPosition();
+    let matchPos = this.board.match.getGeoPosition();
+    axios.post("serverURL", seekerPos);
+    axios.post("serverURL", matchPos);
+  }
 
-    Promise.all(locations);
+  getLocations() {
+    return; //remove this
+    const seekerPromise = new Promise((resolve, reject) => {
+      axios.get("serverURL").then(res => resolve(res));
+    });
+    const matchPromise = new Promise((resolve, reject) => {
+      axios.get("serverURL").then(res => resolve(res));
+    });
+
+    Promise.all([seekerPromise, matchPromise]).then(values =>
+      app.updateLocation(values[0], values[1])
+    );
   }
   /**
    * Updates the UI with the inputted position.
@@ -39,16 +47,19 @@ class Applet {
    * @param {lat(y), lon(x)} matchPos position of match
    * @return void
    */
-  updateLocation(seekerPos, matchPos) {
-    if (seekerPos.hasOwnProperty("lat")) {
-      seekerPos.y = seekerPos.lat;
-      seekerPos.x = seekerPos.lon;
-      matchPos.y = matchPos.lat;
-      matchPos.x = matchPos.lon;
+  //TODO: isolate this to server and local cases
+  updateLocation(seekerPos, matchPos, directionToMatch, distanceToMatch) {
+    if (this.usingServer && !seekerPos) {
+      return;
     }
-    this.compass.point(bearingToMatch(app.board.seeker, app.board.match));
-    this.board.seeker.setGeoPos(seekerPos);
-    this.board.match.setGeoPos(matchPos);
+    seekerPos = seekerPos || this.board.seeker.getGeoPosition();
+    matchPos = matchPos || this.board.match.getGeoPosition();
+    directionToMatch =
+      directionToMatch || bearingToMatch(app.board.seeker, app.board.match);
+    distanceToMatch =
+      distanceToMatch || Math.round(geoDistance(seekerPos, matchPos));
+    this.dataDisplay.compass.point(directionToMatch);
+    this.dataDisplay.updateTable(seekerPos, matchPos, distanceToMatch);
   }
 
   toggleMode(e) {
@@ -59,12 +70,13 @@ class Applet {
       this.usingServer = true;
       this.pingInterval = setInterval(() => {
         console.log("pinging");
-        postLocation();
+        this.postLocations();
+        this.getLocations();
       }, this.pingRate);
     } else {
       this.usingServer = false;
       clearInterval(this.pingInterval);
-      app.compass.point(bearingToMatch(user, match));
+      this.updateLocation();
     }
   }
 
@@ -75,6 +87,12 @@ class Applet {
     });
     this.toggle.local.addEventListener("click", e => {
       this.toggleMode(e);
+    });
+
+    //Open Settings Popup
+    this.settingsButton.addEventListener("click", e => {
+      this.settingsPopup.backdrop.style.visibility = "visible";
+      this.settingsPopup.setPlaceholders();
     });
 
     //Send position
@@ -94,16 +112,94 @@ class Applet {
     });
     //create events for children
     this.board._createEvents();
+    this.settingsPopup._createEvents();
   }
 }
-//TODO: build out gauges class
-class Gauges {
+
+class SettingsPopup {
+  constructor() {
+    this.animationDuration = document.getElementById("animation-duration");
+    this.pingRate = document.getElementById("ping-rate");
+    this.geo = {
+      left: document.getElementById("l-lon"),
+      right: document.getElementById("r-lon"),
+      top: document.getElementById("t-lat"),
+      bottom: document.getElementById("b-lat")
+    };
+    this.submitButton = document.querySelector(".set-options");
+    this.backdrop = document.querySelector(".backdrop");
+  }
+  //TODO: get settings to apply individually
+  applySettings() {
+    console.log("submitted");
+    let values = [this.animationDuration.value];
+    for (let key in this.geo) {
+      values.push(this.geo[key].value);
+    }
+    //update settings
+    app.board.animDuration = Number(this.animationDuration.value) * 1000;
+    const { origin, extent } = app.board.geo;
+    origin.lat = Number(this.geo.top.value);
+    origin.lon = Number(this.geo.left.value);
+    extent.lat = Number(this.geo.bottom.value);
+    extent.lon = Number(this.geo.right.value);
+    console.log(app.board.geo);
+    this.animationDuration.value = "";
+    this.geo.top.value = "";
+    this.geo.left.value = "";
+    this.geo.bottom.value = "";
+    this.geo.right.value = "";
+    this.close();
+  }
+
+  setPlaceholders() {
+    const { extent, origin } = app.board.geo;
+    this.animationDuration.placeholder = app.board.animDuration / 1000 + " sec";
+    this.pingRate.placeholder = app.pingRate + " ms";
+    this.geo.left.placeholder = origin.lon;
+    this.geo.right.placeholder = extent.lon;
+    this.geo.top.placeholder = origin.lat;
+    this.geo.bottom.placeholder = extent.lat;
+  }
+
+  close() {
+    this.backdrop.style.visibility = "hidden";
+  }
+
+  _createEvents() {
+    this.submitButton.addEventListener("click", e => this.applySettings());
+    this.backdrop.addEventListener("click", e => this.close());
+    document
+      .querySelector(".popup")
+      .addEventListener("click", e => e.stopImmediatePropagation());
+  }
+}
+
+class DataDisplay {
   constructor() {
     this.compass = new Compass(
       document.querySelector(".center-circle"),
       document.querySelector(".degree-label")
     );
-    this.table = new LocationTable();
+    this.seekerPos = {
+      lat: document.getElementById("seeker-lat"),
+      lon: document.getElementById("seeker-lon")
+    };
+    this.matchPos = {
+      lat: document.getElementById("match-lat"),
+      lon: document.getElementById("match-lon")
+    };
+    this.distance = document.getElementById("distance");
+  }
+  updateTable(seekerPoint, matchPoint, distanceToMatch) {
+    const sigFig = 100000;
+    this.seekerPos.lat.innerText =
+      Math.round(sigFig * seekerPoint.lat) / sigFig;
+    this.seekerPos.lon.innerText =
+      Math.round(sigFig * seekerPoint.lon) / sigFig;
+    this.matchPos.lat.innerText = Math.round(sigFig * matchPoint.lat) / sigFig;
+    this.matchPos.lon.innerText = Math.round(sigFig * matchPoint.lon) / sigFig;
+    this.distance.innerText = distanceToMatch + " ft";
   }
 }
 
@@ -131,20 +227,12 @@ class LocationTable {
       lon: document.getElementById("match-lon")
     };
   }
-
-  update(seekerPos, matchPos) {
-    this.seekerLocation.lat.innerText = seekerPos.lat;
-    this.seekerLocation.lon.innerText = seekerPos.lon;
-    this.matchLocation.lat.innerText = matchPos.lat;
-    this.matchLocation.lon.innerText = matchPos.lon;
-  }
 }
 
 class Board {
   constructor() {
     this.seeker = null;
     this.match = null;
-    //TODO: make some uids
     this.uids = [
       "Josh",
       "Courtney",
@@ -178,8 +266,8 @@ class Board {
     this.placingPins = false;
 
     this.geo = {
-      origin: { lat: 35.309301, lon: -120.670036 },
-      extent: { lat: 35.297267, lon: -120.652539 }
+      origin: { lat: 1.0, lon: 1.0 },
+      extent: { lat: 1.0001, lon: 1.0001 }
     };
     this.backgrounds = [
       "rgb(157, 227, 255)",
@@ -188,6 +276,7 @@ class Board {
     ];
     this.backgroundIndex = 0;
     this.el.style.background = this.backgrounds[this.backgroundIndex];
+    this.animDuration = 5000;
   }
 
   initState() {
@@ -201,6 +290,7 @@ class Board {
       const userPos = user.el.getClientRects()[0];
       user.setPos(userPos);
     }
+    app.updateLocation();
   }
 
   addUser() {
@@ -306,7 +396,15 @@ class Board {
         });
         e.target.src = "./assets/Pause.svg";
         for (let i = 0; i < this.users.length; i++) {
-          this.users[i].simpleWalk();
+          this.users[i].simpleWalk(5000);
+          if (!app.usingServer) {
+            const bearingCheck = setInterval(() => {
+              app.updateLocation();
+            }, 10);
+            setTimeout(() => {
+              clearInterval(bearingCheck);
+            }, 5010);
+          }
         }
       }
     });
@@ -343,11 +441,7 @@ class Board {
       }
       //Automatically update pointer if local UPDATE SEEKER
       if (!app.usingServer) {
-        app.compass.point(bearingToMatch(this.seeker, this.match));
-        app.locationTable.update(
-          this.seeker.getGeoPosition(),
-          this.match.getGeoPosition()
-        );
+        app.updateLocation();
       }
     };
 
@@ -382,21 +476,13 @@ class Board {
     //Set user as Seeker
     this.userOptions.seeker.addEventListener("click", e => {
       this.selectSeeker();
-      app.compass.point(bearingToMatch(app.board.seeker, app.board.match));
-      app.locationTable.update(
-        this.seeker.getGeoPosition(),
-        this.match.getGeoPosition()
-      );
+      app.updateLocation();
     });
 
     //Set user as Match
     this.userOptions.match.addEventListener("click", e => {
       this.selectMatch();
-      app.compass.point(bearingToMatch(app.board.seeker, app.board.match));
-      app.locationTable.update(
-        this.seeker.getGeoPosition(),
-        this.match.getGeoPosition()
-      );
+      app.updateLocation();
     });
   }
 }
@@ -436,7 +522,7 @@ class Person {
     const lonRange = app.board.geo.extent.lon - app.board.geo.origin.lon;
     const lat = latRange * this.x + app.board.geo.origin.lat;
     const lon = lonRange * this.y + app.board.geo.origin.lon;
-    return { lat, lon };
+    return { lat, lon, heading: this.heading };
   }
 
   /**
@@ -454,16 +540,6 @@ class Person {
     this.y =
       (100 * (pxPoint.y - offset.top - elementPosition.height / 2)) /
       (offset.bottom - offset.top);
-  }
-
-  setGeoPos(userPos) {
-    //convert to percentage
-    const { origin, extent } = app.board.geo;
-    const x = (userPos.lon - origin.lon) / (extent.lon - origin.lon);
-    const y = (userPos.lat - origin.lat) / (extent.lat - origin.lat);
-    //set the position
-    this.el.style.top = y + "%";
-    this.el.style.left = x + "%";
   }
 
   //Will be adapted to handle multiple waypoints in the future (in order to make walk work)
@@ -491,7 +567,16 @@ class Person {
     el.style.left = x - 1.5 + "%";
   }
 
-  simpleWalk() {
+  hideWaypoints() {}
+
+  removeWaypoints() {
+    for (let i = 0; i < this.waypoints.length; i++) {
+      const removedWaypoint = this.waypoints.pop();
+      app.board.el.removeChild(removedWaypoint.el);
+    }
+  }
+
+  simpleWalk(duration) {
     if (this.waypoints.length == 0) {
       return;
     }
@@ -515,9 +600,9 @@ class Person {
       this.el.classList.remove("walk");
       clearInterval(updateLocation);
       this.isAnimating = false;
+      this.removeWaypoints();
       app.board.menu.play.src = "./assets/Play.svg";
-      console.log("cleaned up");
-    }, 5100);
+    }, duration + 10);
     this.el.style.top = this.waypoints[0].y - elOffset + "%";
     this.el.style.left = this.waypoints[0].x - elOffset + "%";
   }
@@ -560,13 +645,18 @@ Provides the location for the user menu
       //Set new user heading
       this.el.style.transform = `rotate(${angle}deg)`;
       this.heading = angle;
+      if (!app.usingServer) {
+        app.dataDisplay.compass.point(
+          bearingToMatch(app.board.seeker, app.board.match)
+        );
+      }
     });
     //Select
     this.el.addEventListener("click", e => {
-      for (let user of app.board.users) {
-        user.selected = false;
-        user.el.classList.remove("selected");
-      }
+      app.board.selectedUser.waypoints.forEach(waypoint => {
+        waypoint.el.style.visibility = "hidden";
+      });
+      app.board.selectedUser.el.classList.remove("selected");
       this.selected = true;
       this.el.classList.add("selected");
       this.displayMenu();
@@ -580,8 +670,11 @@ Provides the location for the user menu
 
 //MATH HELPER FUNCTIONS
 //-------------------------------------------------------------------
-function pointDistance(p1, p2) {
-  return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+function geoDistance(p1, p2) {
+  const ftConversionFactor = (3280.4 * 10000) / 90;
+  const ftX = (p1.lon - p2.lon) * ftConversionFactor;
+  const ftY = (p1.lat - p2.lat) * ftConversionFactor;
+  return Math.sqrt(ftX ** 2 + ftY ** 2);
 }
 
 function findInnerAngle(s1, s2, opSide) {
@@ -609,18 +702,10 @@ function bearingToMatch(user, match) {
 //TOP LEVEL OBJECTS
 //--------------------------------------------------------------
 
-//TODO: switch client bounding boxes to computed styles
-const compass = new Compass(
-  document.querySelector(".center-circle"),
-  document.querySelector(".degree-label")
-);
-const board = new Board();
-const locationTable = new LocationTable();
-const app = new Applet(compass, board, locationTable);
+const app = new Applet();
 
 //INITIAL SETUP
 //-------------------------------------------------------------------------------------
 window.addEventListener("load", e => {
   app.board.initState();
-  app.compass.point(bearingToMatch(app.board.seeker, app.board.match));
 });

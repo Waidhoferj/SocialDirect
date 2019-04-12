@@ -13,11 +13,13 @@
         <div class="send-circle"></div>
       </div>
     </div>
+
     <nav>
       <div class="toggle-bar">
         <a href="#local" class="toggle active" id="local">Local</a>
         <a href="#online" class="toggle" id="online">Online</a>
       </div>
+      <img id="settings-button" src="./assets/Cog.svg" alt="Settings" />
     </nav>
     <div class="container">
       <div class="birds-eye">
@@ -67,7 +69,7 @@
         <div class="center-circle">
           <div class="dir-pointer"></div>
         </div>
-        <div class="distance">Distance: 50ft</div>
+        <div id="distance">50ft</div>
         <table class="location-data">
           <tr>
             <th></th>
@@ -87,7 +89,31 @@
         </table>
       </div>
     </div>
-    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+
+    <div class="backdrop">
+      <div class="popup">
+        <div class="flex">
+          <div class="option-title">
+            <p>Animation Duration</p>
+            <p>Server ping rate</p>
+            <p>Left Lon Border</p>
+            <p>Right Lon Border</p>
+            <p>Top Lat Border</p>
+            <p>Bottom Lat Border</p>
+          </div>
+          <div class="option-input">
+            <input type="number" id="animation-duration" />
+            <input type="number" id="ping-rate" />
+            <input type="number" id="l-lon" />
+            <input type="number" id="r-lon" />
+            <input type="number" id="t-lat" />
+            <input type="number" id="b-lat" />
+          </div>
+        </div>
+        <button class="set-options">Apply</button>
+      </div>
+    </div>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="main.js"></script>
   </body>
 </html>
